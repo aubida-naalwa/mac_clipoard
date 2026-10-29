@@ -31,6 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         monitor.start()
 
         panel.onPaste = { [weak self] entry, plainText in self?.paste(entry, plainText: plainText) }
+        panel.onAccessibilityHelp = { [weak self] in self?.showAccessibilityHelp() }
         hotKey.onPress = { [weak self] in self?.panel.toggle() }
         registerHotKey()
 
@@ -60,7 +61,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         guard Paster.isTrusted else {
             // Without Accessibility we can only put it on the clipboard; the user presses ⌘V.
-            Paster.requestTrust()
+            // The panel footer already explains how to fix it, so don't pop the system prompt here.
             return
         }
         // Give the target app a moment to get keyboard focus back from our panel.
@@ -183,8 +184,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func grantAccessibility() {
-        Paster.requestTrust()
-        Paster.openAccessibilitySettings()
+        showAccessibilityHelp()
     }
 
     @objc private func showAbout() {
@@ -220,6 +220,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if alert.runModal() == .alertFirstButtonReturn {
                 Paster.requestTrust()
             }
+        }
+    }
+
+    /// macOS ties the permission to the exact build, so a switch that is already on can belong
+    /// to an older copy of the app. Explain that case instead of re-showing the system prompt.
+    private func showAccessibilityHelp() {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = "Allow ClipHistory to paste"
+        alert.informativeText = """
+        In Privacy & Security → Accessibility, turn on ClipHistory. If it isn't in the list, click + and choose it from Applications.
+
+        Already turned on? The permission belongs to an older build of ClipHistory. Select ClipHistory, click − to remove it, then click + and add it again.
+        """
+        alert.addButton(withTitle: "Open Accessibility Settings")
+        alert.addButton(withTitle: "Cancel")
+        if alert.runModal() == .alertFirstButtonReturn {
+            Paster.openAccessibilitySettings()
         }
     }
 

@@ -44,6 +44,17 @@ make install   # copies it to /Applications and launches it
 To paste into other apps, ClipHistory needs **Accessibility** access (System Settings → Privacy &
 Security → Accessibility). Without it, choosing an item copies it and you press ⌘V yourself.
 
-The build is ad-hoc signed, so macOS treats every rebuild as a new app. After rebuilding, remove
-ClipHistory from the Accessibility list and add it again. To avoid this, sign with a real identity:
-`SIGN_IDENTITY="Apple Development: you@example.com (TEAMID)" make app`.
+macOS ties this permission to the app's signature. Without a signing certificate the build is
+ad-hoc signed, and every rebuild looks like a new app. The switch in System Settings stays on, but
+it no longer applies, so ClipHistory keeps asking. Create a local signing certificate once and
+every later build keeps the permission:
+
+```bash
+scripts/setup-signing.sh   # adds "ClipHistory Local Signing" to your login keychain
+make install               # macOS may ask for your login password once: choose Always Allow
+```
+
+Then, one last time, open Accessibility settings, select ClipHistory, click − to remove it, and
+click + to add `/Applications/ClipHistory.app` again.
+
+To use a different identity: `SIGN_IDENTITY="Apple Development: you@example.com (TEAMID)" make app`.

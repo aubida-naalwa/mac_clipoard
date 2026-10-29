@@ -120,6 +120,7 @@ final class PanelController: NSObject, NSWindowDelegate {
 
     let model = PanelModel()
     var onPaste: ((ClipEntry, Bool) -> Void)?
+    var onAccessibilityHelp: (() -> Void)?
 
     private let store: HistoryStore
     private let panel = HistoryPanel(size: PanelController.panelSize)
@@ -140,8 +141,7 @@ final class PanelController: NSObject, NSWindowDelegate {
             clearAll: { [weak self] in self?.store.clearUnpinned() },
             openAccessibilitySettings: { [weak self] in
                 self?.hide()
-                Paster.requestTrust()
-                Paster.openAccessibilitySettings()
+                self?.onAccessibilityHelp?()
             }
         )
         panel.setRootView(HistoryView(model: model, store: store, actions: actions))

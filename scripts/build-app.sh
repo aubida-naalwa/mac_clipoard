@@ -7,8 +7,19 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 CONFIG="${CONFIG:-release}"
-SIGN_IDENTITY="${SIGN_IDENTITY:--}" # "-" = ad-hoc
 APP="build/ClipHistory.app"
+
+# Prefer the stable identity from scripts/setup-signing.sh so Accessibility access survives rebuilds.
+LOCAL_IDENTITY="ClipHistory Local Signing"
+if [[ -z "${SIGN_IDENTITY:-}" ]]; then
+  if security find-identity -p codesigning 2>/dev/null | grep -q "\"$LOCAL_IDENTITY\""; then
+    SIGN_IDENTITY="$LOCAL_IDENTITY"
+  else
+    SIGN_IDENTITY="-" # ad-hoc
+    echo "note: signing ad-hoc; macOS will forget the Accessibility permission after this rebuild." >&2
+    echo "      Run scripts/setup-signing.sh once to keep it across rebuilds." >&2
+  fi
+fi
 
 swift build -c "$CONFIG"
 BIN_DIR="$(swift build -c "$CONFIG" --show-bin-path)"
@@ -22,4 +33,4 @@ if [[ -f Resources/AppIcon.icns ]]; then
 fi
 
 codesign --force --sign "$SIGN_IDENTITY" --identifier app.cliphistory.ClipHistory "$APP"
-echo "Built $APP"
+echo "Built $APP (signed with: $SIGN_IDENTITY)"
