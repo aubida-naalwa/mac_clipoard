@@ -211,15 +211,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         To paste straight into the app you're using, ClipHistory needs Accessibility access. \
         Without it, the item is copied and you press ⌘V yourself.
         """
-        if Paster.isTrusted {
-            alert.addButton(withTitle: "Got It")
-            alert.runModal()
-        } else {
-            alert.addButton(withTitle: "Allow Accessibility…")
-            alert.addButton(withTitle: "Later")
-            if alert.runModal() == .alertFirstButtonReturn {
-                Paster.requestTrust()
-            }
+        // The shortcut only works while the app runs, so start at login unless the user opts out.
+        let openAtLogin = NSButton(checkboxWithTitle: "Open ClipHistory at login", target: nil, action: nil)
+        openAtLogin.state = .on
+        alert.accessoryView = openAtLogin
+
+        alert.addButton(withTitle: Paster.isTrusted ? "Got It" : "Allow Accessibility…")
+        if !Paster.isTrusted { alert.addButton(withTitle: "Later") }
+        let response = alert.runModal()
+
+        if openAtLogin.state == .on, SMAppService.mainApp.status != .enabled {
+            try? SMAppService.mainApp.register()
+        }
+        if !Paster.isTrusted, response == .alertFirstButtonReturn {
+            Paster.requestTrust()
         }
     }
 

@@ -26,12 +26,16 @@ final class HistoryStore: ObservableObject {
     private let ioQueue = DispatchQueue(label: "ClipHistory.io", qos: .utility)
     private let thumbnailCache = NSCache<NSUUID, NSImage>()
 
-    init() {
+    nonisolated static var defaultDirectory: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("ClipHistory", isDirectory: true)
+    }
+
+    init(directory: URL = HistoryStore.defaultDirectory) {
         let stored = UserDefaults.standard.integer(forKey: Self.maxItemsKey)
         maxItems = stored > 0 ? stored : 50
 
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        directory = support.appendingPathComponent("ClipHistory", isDirectory: true)
+        self.directory = directory
         itemsDirectory = directory.appendingPathComponent("items", isDirectory: true)
         try? FileManager.default.createDirectory(at: itemsDirectory, withIntermediateDirectories: true)
         load()
